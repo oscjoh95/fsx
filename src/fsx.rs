@@ -1,6 +1,5 @@
-use crate::error;
 use crate::error::FsError;
-use crate::walk;
+use crate::walk::{self, FsVisitor};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -13,44 +12,64 @@ pub struct FsStats {
     pub max_depth: usize,
 }
 
+pub struct FsStatsReport {
+    pub stats: FsStats,
+    pub errors: Vec<FsError>,
+}
+
+#[derive(Default)]
+struct StatsVisitor {
+    stats: FsStats,
+    errs: Vec<FsError>,
+}
+
+impl FsVisitor for StatsVisitor {
+    fn visit_file(&mut self, path: &Path, meta: &fs::Metadata, depth: usize) {
+        let size = meta.len();
+        self.stats.total_files += 1;
+        self.stats.total_size += size;
+        if self
+            .stats
+            .largest_file
+            .as_ref()
+            .map_or(true, |(_, largest_size)| size > *largest_size)
+        {
+            self.stats.largest_file = Some((path.to_path_buf(), size));
+        }
+        self.stats.max_depth = self.stats.max_depth.max(depth);
+    }
+
+    fn enter_dir(&mut self, _path: &Path, _meta: &fs::Metadata, depth: usize) {
+        self.stats.total_dirs += 1;
+        self.stats.max_depth = self.stats.max_depth.max(depth);
+    }
+
+    fn exit_dir(&mut self, _path: &Path, _meta: &fs::Metadata, _depth: usize) {
+        /* We do all work when entering dir */
+    }
+
+    fn on_error(&mut self, error: FsError) {
+        self.errs.push(error);
+    }
+}
+
+impl StatsVisitor {
+    fn into_report(self) -> FsStatsReport {
+        FsStatsReport {
+            stats: self.stats,
+            errors: self.errs,
+        }
+    }
+}
+
 pub fn collect_stats(
     root: &Path,
     max_depth: Option<usize>,
-) -> Result<FsStats, Vec<error::FsError>> {
-    let mut stats = FsStats::default();
+) -> FsStatsReport {
+    let mut visitor = StatsVisitor::default();
 
-    let mut entry_callback =
-        |path: &Path, meta: &fs::Metadata, entry_type: walk::EntryType, depth: usize| {
-            match entry_type {
-                walk::EntryType::File => {
-                    let size = meta.len();
-                    stats.total_files += 1;
-                    stats.total_size += size;
-                    if stats
-                        .largest_file
-                        .as_ref()
-                        .map_or(true, |(_, largest_size)| size > *largest_size)
-                    {
-                        stats.largest_file = Some((path.to_path_buf(), size));
-                    }
-                }
-                walk::EntryType::Dir => stats.total_dirs += 1,
-                walk::EntryType::Symlink => {} // Skip for now
-            }
-            stats.max_depth = stats.max_depth.max(depth);
-        };
-
-    let mut errs: Vec<FsError> = Vec::new();
-    let mut error_callback = |err: FsError| {
-        errs.push(err);
-    };
-
-    walk::walk_dir(root, &mut entry_callback, &mut error_callback, max_depth);
-    if errs.is_empty() {
-        Ok(stats)
-    } else {
-        Err(errs)
-    }
+    walk::walk_dir(root, &mut visitor, max_depth);
+    visitor.into_report()
 }
 
 #[cfg(test)]
@@ -85,7 +104,7 @@ mod tests {
         create_fs_tree(tmp_path, &tree).unwrap();
         let root = tmp_path.join("root");
 
-        let stats = collect_stats(&root, None).expect("Not expecting errors for collect_stats");
+        let stats = collect_stats(&root, None).stats;
 
         assert_eq!(stats.total_files, 3);
         assert_eq!(stats.total_dirs, 2);
@@ -124,7 +143,7 @@ mod tests {
         create_fs_tree(tmp_path, &tree).unwrap();
         let root = tmp_path.join("root");
 
-        let stats = collect_stats(&root, Some(2)).expect("Not expecting errors for collect_stats");
+        let stats = collect_stats(&root, Some(2)).stats;
 
         assert_eq!(stats.total_files, 2);
         assert_eq!(stats.total_dirs, 2);

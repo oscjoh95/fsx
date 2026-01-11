@@ -2,8 +2,8 @@ mod cli;
 mod error;
 mod fsx;
 mod output;
-mod walk;
 mod test_utils;
+mod walk;
 
 use clap::Parser;
 
@@ -15,13 +15,14 @@ fn main() {
             path,
             max_depth,
             format,
-        } => match fsx::collect_stats(&path, max_depth) {
-            Ok(stats) => output::print_stats(&stats, format),
-            Err(errs) => {
-                for err in errs {
+        } => {
+            let report = fsx::collect_stats(&path, max_depth);
+            {
+                output::print_stats(&report.stats, format);
+                for err in report.errors {
                     eprintln!("{}", err);
                 }
             }
-        },
+        }
     }
 }
