@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 pub struct FsStats {
     pub total_files: usize,
     pub total_dirs: usize,
+    pub total_symlinks: usize,
     pub total_size: u64,
     pub largest_file: Option<(PathBuf, u64)>,
     pub max_depth: usize,
@@ -48,6 +49,10 @@ impl FsVisitor for StatsVisitor {
         /* We do all work when entering dir */
     }
 
+    fn visit_symlink(&mut self, _path: &Path, _depth: usize) {
+        self.stats.total_symlinks += 1;
+    }
+
     fn on_error(&mut self, error: FsError) {
         self.errs.push(error);
     }
@@ -62,13 +67,10 @@ impl StatsVisitor {
     }
 }
 
-pub fn collect_stats(
-    root: &Path,
-    max_depth: Option<usize>,
-) -> FsStatsReport {
+pub fn collect_stats(root: &Path, max_depth: Option<usize>, follow_symlinks: bool) -> FsStatsReport {
     let mut visitor = StatsVisitor::default();
 
-    walk::walk_dir(root, &mut visitor, max_depth);
+    walk::walk_dir(root, &mut visitor, max_depth, follow_symlinks);
     visitor.into_report()
 }
 
@@ -104,7 +106,7 @@ mod tests {
         create_fs_tree(tmp_path, &tree).unwrap();
         let root = tmp_path.join("root");
 
-        let stats = collect_stats(&root, None).stats;
+        let stats = collect_stats(&root, None, false).stats;
 
         assert_eq!(stats.total_files, 3);
         assert_eq!(stats.total_dirs, 2);
@@ -143,7 +145,7 @@ mod tests {
         create_fs_tree(tmp_path, &tree).unwrap();
         let root = tmp_path.join("root");
 
-        let stats = collect_stats(&root, Some(2)).stats;
+        let stats = collect_stats(&root, Some(2), false).stats;
 
         assert_eq!(stats.total_files, 2);
         assert_eq!(stats.total_dirs, 2);
@@ -151,5 +153,48 @@ mod tests {
         assert!(stats.largest_file.is_some());
         assert_eq!(stats.largest_file, Some((root.join("subdir/file2.txt"), 6)));
         assert_eq!(stats.max_depth, 2);
+    }
+
+    #[cfg(target_os = "windows")]
+    mod windows_only_tests {
+        use crate::fsx::collect_stats;
+        use crate::test_utils::{FsNode, create_fs_tree};
+        use tempfile::tempdir;
+
+        #[test]
+        fn collects_and_reports_stats_with_symlinks() {
+            // Setup temp dir
+            let tmp = tempdir().unwrap();
+            let tmp_path = tmp.path();
+
+            let tree = FsNode::Dir(
+                "root",
+                vec![
+                    FsNode::File("file1.txt", "hello"),
+                    FsNode::Dir(
+                        "subdir",
+                        vec![
+                            FsNode::File("file2.txt", "world!"),
+                            FsNode::SymlinkFile("link_to_file2.txt", "file2.txt"),
+                            FsNode::SymlinkDir("link_to_subdir", "subdir"),
+                        ],
+                    ),
+                ],
+            );
+
+            create_fs_tree(tmp_path, &tree).unwrap();
+            let root = tmp_path.join("root");
+
+            let stats = collect_stats(&root, None, false).stats;
+
+            // Normal files
+            assert_eq!(stats.total_files, 2);
+            assert_eq!(stats.total_dirs, 1);
+            assert_eq!(stats.total_size, 11);
+            assert_eq!(stats.total_symlinks, 2); // File and dir symlinks are counted as equivalent
+            assert!(stats.largest_file.is_some());
+            assert_eq!(stats.largest_file, Some((root.join("subdir/file2.txt"), 6)));
+            assert_eq!(stats.max_depth, 2);
+        }
     }
 }

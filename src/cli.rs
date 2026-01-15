@@ -35,5 +35,8 @@ pub enum Commands {
         /// debug  - Debug output (Rust struct dump)
         #[arg(long, default_value = "human")]
         format: output::OutputFormat,
+        /// Recurse into symbolic links
+        #[arg(long)]
+        follow_symlinks: bool,
     },
 }

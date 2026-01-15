@@ -23,6 +23,7 @@ pub fn print_stats(stats: &fsx::FsStats, format: OutputFormat) {
         OutputFormat::Raw => {
             println!("Files: {}", stats.total_files);
             println!("Dirs: {}", stats.total_dirs);
+            println!("Symlinks: {}", stats.total_symlinks);
             println!("Size: {} bytes", stats.total_size);
             if let Some((path, size)) = &stats.largest_file {
                 println!("Largest file: {} ({} bytes)", path.display(), size);
@@ -35,6 +36,7 @@ pub fn print_stats(stats: &fsx::FsStats, format: OutputFormat) {
         OutputFormat::Human => {
             println!("Files: {}", stats.total_files);
             println!("Dirs: {}", stats.total_dirs);
+            println!("Symlinks: {}", stats.total_symlinks);
             println!("Size: {}", convert_to_human_readable(stats.total_size));
             if let Some((path, size)) = &stats.largest_file {
                 println!(
