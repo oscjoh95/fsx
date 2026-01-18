@@ -1,4 +1,4 @@
-use crate::fsx;
+use fsx::collect_stats::FsStats;
 
 #[derive(clap::ValueEnum, Clone, Debug)]
 pub enum OutputFormat {
@@ -18,7 +18,7 @@ fn convert_to_human_readable(bytes: u64) -> String {
     new_val.to_string() + prefixes[prefix] + "B"
 }
 
-pub fn print_stats(stats: &fsx::FsStats, format: OutputFormat) {
+pub fn print_stats(stats: &FsStats, format: OutputFormat) {
     match format {
         OutputFormat::Raw => {
             println!("Files: {}", stats.total_files);

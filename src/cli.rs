@@ -24,19 +24,14 @@ pub enum Commands {
         /// If not set, the entire directory tree is traversed.
         #[arg(short, long)]
         max_depth: Option<usize>,
-        /// Output format
-        ///
-        /// Possible values:
-        ///
-        /// human  - Human-readable sizes
-        ///
-        /// raw    - Exact byte counts
-        ///
-        /// debug  - Debug output (Rust struct dump)
+        /// Output format: human (default), raw (bytes), debug (Rust struct)
         #[arg(long, default_value = "human")]
         format: output::OutputFormat,
         /// Recurse into symbolic links
         #[arg(long)]
         follow_symlinks: bool,
+        /// Ignore filter (Regex expression)
+        #[arg(long)]
+        ignore: Option<String>,
     },
 }

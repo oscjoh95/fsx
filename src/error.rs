@@ -9,7 +9,7 @@ pub enum FsError {
 impl fmt::Display for FsError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            FsError::Io(p,err ) => {
+            FsError::Io(p, err) => {
                 write!(f, "{}: {}", p.display(), err)
             }
         }
