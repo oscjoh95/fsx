@@ -41,6 +41,27 @@ fsx stats /path/to/dir
 ```bash 
 fsx stats --max-depth 2 
 ```
+Depth starts at 1 for entries directly under the root path.
+
+If not set, the entire directory tree is traversed.
+
+### Follow symbolic links
+
+By default, symbolic links are detected but not followed.
+
+To recurse into symlink targets:
+```bash
+fsx stats --follow-symlinks
+```
+Symlink cycles are detected and avoided automatically.
+
+### Ignore paths
+
+You can ignore files or directories using a glob expression:
+```bash
+fsx stats --ignore "*target*"
+```
+The ignore filter is applied to paths during traversal, including symlink targets when symlinks are followed.
 
 ### Output formats
 ```bash 
@@ -64,6 +85,13 @@ fsx stats --max-depth 2
     human - Human-readable sizes (default)
     raw - Exact byte counts
     debug - Debug output (Rust struct dump)
+
+--follow-symlinks
+    Recurse into symbolic links.
+    Symlink cycles are detected and avoided.
+
+--ignore <REGEX>
+    Ignore paths matching the given regular expression.
 ```
 
 ### Examples
@@ -76,4 +104,7 @@ fsx stats /path/to/dir --format raw
 
 # Limit depth to 2
 fsx stats /path/to/dir --max-depth 2
+
+# Follow symlinks but ignore build artifacts
+fsx stats --follow-symlinks --ignore "*target*"
 ```
