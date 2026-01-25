@@ -1,4 +1,5 @@
 use crate::error::FsError;
+use crate::filter::PathFilter;
 use std::{
     collections::HashSet,
     fs::{self, Metadata},
@@ -11,10 +12,6 @@ pub trait FsVisitor {
     fn exit_dir(&mut self, path: &Path, meta: &Metadata, depth: usize);
     fn visit_symlink(&mut self, path: &Path, depth: usize);
     fn on_error(&mut self, error: FsError);
-}
-
-pub trait PathFilter {
-    fn is_ignored(&self, path: &Path) -> bool;
 }
 
 struct WalkContext<'a, V: FsVisitor> {
@@ -62,7 +59,15 @@ fn walk_dir_internal<V: FsVisitor>(root: &Path, ctx: &mut WalkContext<V>, depth:
         };
         let path = entry.path();
 
-        if ctx.filter.is_ignored(&path) {
+        let is_dir = match entry.file_type() {
+            Ok(ft) => ft.is_dir(),
+            Err(e) => {
+                ctx.visitor.on_error(FsError::Io(path, e));
+                continue;
+            }
+        };
+
+        if ctx.filter.is_ignored(&path, is_dir) {
             continue;
         }
 
@@ -95,7 +100,7 @@ fn walk_dir_internal<V: FsVisitor>(root: &Path, ctx: &mut WalkContext<V>, depth:
                     };
 
                     // Make sure that we don't visit ignored symlink targets
-                    if ctx.filter.is_ignored(&target) {
+                    if ctx.filter.is_ignored(&target, target_meta.is_dir()) {
                         continue;
                     }
 

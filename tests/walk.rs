@@ -41,7 +41,7 @@ struct TestPathFilter {
 }
 
 impl PathFilter for TestPathFilter {
-    fn is_ignored(&self, path: &Path) -> bool {
+    fn is_ignored(&self, path: &Path, _is_dir: bool) -> bool {
         self.ignored_paths.iter().any(|p| p.as_path() == path)
     }
 }
@@ -245,7 +245,7 @@ fn ignore_nothing() {
     #[derive(Default)]
     struct FalsePathFilter {}
     impl PathFilter for FalsePathFilter {
-        fn is_ignored(&self, _path: &Path) -> bool {
+        fn is_ignored(&self, _path: &Path, _is_dir: bool) -> bool {
             false
         }
     }
@@ -300,7 +300,7 @@ fn ignore_everything() {
     #[derive(Default)]
     struct TruePathFilter {}
     impl PathFilter for TruePathFilter {
-        fn is_ignored(&self, _path: &Path) -> bool {
+        fn is_ignored(&self, _path: &Path, _is_dir: bool) -> bool {
             true
         }
     }

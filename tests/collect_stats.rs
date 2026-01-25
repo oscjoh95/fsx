@@ -1,4 +1,4 @@
-use fsx::{collect, test_utils::{FsNode, create_fs_tree}};
+use fsx::{collect, filter::GitIgnoreFilter, test_utils::{FsNode, create_fs_tree}};
 use tempfile::tempdir;
 
 #[test]
@@ -26,8 +26,9 @@ fn collects_and_reports_stats() {
     );
     create_fs_tree(tmp_path, &tree).unwrap();
     let root = tmp_path.join("root");
+    let filter = GitIgnoreFilter::new(&root, &Vec::new());
 
-    let stats = collect(&root, None, false, None).stats;
+    let stats = collect(&root, None, false, &filter).stats;
 
     assert_eq!(stats.total_files, 3);
     assert_eq!(stats.total_dirs, 2);
@@ -65,8 +66,9 @@ fn collects_and_reports_stats_with_max_depth() {
     );
     create_fs_tree(tmp_path, &tree).unwrap();
     let root = tmp_path.join("root");
+    let filter = GitIgnoreFilter::new(&root, &Vec::new());
 
-    let stats = collect(&root, Some(2), false, None).stats;
+    let stats = collect(&root, Some(2), false, &filter).stats;
 
     assert_eq!(stats.total_files, 2);
     assert_eq!(stats.total_dirs, 2);
@@ -100,8 +102,9 @@ fn collects_and_reports_stats_with_symlinks() {
 
     create_fs_tree(tmp_path, &tree).unwrap();
     let root = tmp_path.join("root");
+    let filter = GitIgnoreFilter::new(&root, &Vec::new());
 
-    let stats = collect(&root, None, false, None).stats;
+    let stats = collect(&root, None, false, &filter).stats;
 
     // Normal files
     assert_eq!(stats.total_files, 2);

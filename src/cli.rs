@@ -30,8 +30,8 @@ pub enum Commands {
         /// Recurse into symbolic links
         #[arg(long)]
         follow_symlinks: bool,
-        /// Ignore filter (Regex expression)
-        #[arg(long)]
-        ignore: Option<String>,
+        /// Ignore filter (gitignore semantics)
+        #[arg(short, long)]
+        ignore: Option<Vec<String>>,
     },
 }

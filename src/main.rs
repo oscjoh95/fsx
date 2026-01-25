@@ -2,8 +2,8 @@ mod cli;
 mod output;
 
 use clap::Parser;
-use globset::Glob;
 use fsx::collect;
+use fsx::filter::GitIgnoreFilter;
 
 fn main() {
     let cli = cli::Cli::parse();
@@ -16,18 +16,9 @@ fn main() {
             follow_symlinks,
             ignore,
         } => {
-            let ignore_glob = match &ignore {
-                Some(pattern) => Some(match Glob::new(pattern) {
-                    Ok(glob) => glob.compile_matcher(),
-                    Err(e) => {
-                        eprintln!("Invalid ignore pattern '{}': {}", pattern, e);
-                        std::process::exit(1);
-                    }
-                }),
-                None => None,
-            };
+            let ignore_filter = GitIgnoreFilter::new(&path, &ignore.unwrap_or(Vec::new()));
 
-            let report = collect(&path, max_depth, follow_symlinks, ignore_glob);
+            let report = collect(&path, max_depth, follow_symlinks, &ignore_filter);
             {
                 output::print_stats(&report.stats, format);
                 for err in report.errors {

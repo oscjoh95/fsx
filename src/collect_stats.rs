@@ -1,6 +1,6 @@
 use crate::error::FsError;
-use crate::walk::{walk_dir, FsVisitor, PathFilter};
-use globset::GlobMatcher;
+use crate::filter::PathFilter;
+use crate::walk::{FsVisitor, walk_dir};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -68,30 +68,15 @@ impl StatsVisitor {
     }
 }
 
-struct StatsFilter {
-    glob: Option<GlobMatcher>,
-}
-
-impl PathFilter for StatsFilter {
-    fn is_ignored(&self, path: &Path) -> bool {
-        match &self.glob {
-            Some(glob) => glob.is_match(path),
-            None => false, // nothing is ignored if no pattern
-        }
-    }
-}
-
 pub fn collect(
     root: &Path,
     max_depth: Option<usize>,
     follow_symlinks: bool,
-    ignore_glob: Option<GlobMatcher>,
+    filter: &dyn PathFilter,
 ) -> FsStatsReport {
     let mut visitor = StatsVisitor::default();
-    let filter = StatsFilter { glob: ignore_glob };
 
-    walk_dir(root, &mut visitor, &filter, max_depth, follow_symlinks);
+    walk_dir(root, &mut visitor, filter, max_depth, follow_symlinks);
 
     visitor.into_report()
 }
-
