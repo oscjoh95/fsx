@@ -19,7 +19,7 @@ It continues on errors, reporting unreadable files or directories as warnings.
 Build from source with Rust:
 
 ```bash
-git clone https://github.com/<your-username>/fsx.git
+git clone https://github.com/oscjoh95/fsx.git
 cd fsx
 cargo build --release
 ``` 
@@ -57,11 +57,17 @@ Symlink cycles are detected and avoided automatically.
 
 ### Ignore paths
 
-You can ignore files or directories using one or more gitignore-style patterns.
+`fsx` automatically reads a `.gitignore` file in the root of the directory being analyzed. Patterns from this file are applied during traversal.  
+
+You can also provide additional ignore patterns via the CLI `--ignore` flag. CLI patterns are appended to `.gitignore` patterns, so they take precedence if there’s overlap.  
+
 ```bash
 fsx stats --ignore "target/"
 ```
-The ignore filter is applied to paths during traversal, including symlink targets when symlinks are followed.
+
+Ignored directories are skipped entirely, including all children.  
+
+Currently, only a `.gitignore` in the root directory is supported; nested `.gitignore` files are ignored.
 
 ### Ignore semantics and directory traversal
 
@@ -73,8 +79,9 @@ This means that negation patterns (`!`) cannot re-include files or
 subdirectories inside an ignored directory, because they are never visited.
 
 For example:
-
+```bash
 fsx stats --ignore "target/" --ignore "!target/keep/"
+```
 
 In this case, `target/` is ignored and traversal stops at that directory.
 `target/keep/` will not be visited, even though it is later negated.
@@ -83,9 +90,9 @@ To include a subdirectory, the parent directory must not be ignored.
 
 To selectively ignore contents of a directory while keeping a subdirectory,
 ignore the contents instead of the directory itself, for example:
-
---ignore "target/*"
---ignore "!target/keep/"
+```bash
+fsx stats --ignore "target/*" --ignore "!target/keep/"
+```
 
 ### Output formats
 ```bash 

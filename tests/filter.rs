@@ -200,3 +200,73 @@ fn anchored_negation() {
     assert!(!filter.is_ignored(&p("keep.txt"), false));
     assert!(filter.is_ignored(&p("sub/keep.txt"), false));
 }
+
+mod gitignore_tests {
+    use super::*;
+    use std::fs::File;
+    use std::io::Write;
+    use tempfile::tempdir;
+
+    fn write_gitignore(dir: &std::path::Path, contents: &str) {
+        let path = dir.join(".gitignore");
+        let mut file = File::create(path).unwrap();
+        write!(file, "{}", contents).unwrap();
+    }
+
+    #[test]
+    fn basic_gitignore_parsing() {
+        let dir = tempdir().unwrap();
+        write_gitignore(dir.path(), "target/\n*.log\n");
+
+        let filter = GitIgnoreFilter::from_gitignore(dir.path(), &[]);
+        let patterns: Vec<String> = filter
+            .patterns()
+            .iter()
+            .map(|p| p.matcher().glob().to_string())
+            .collect();
+        assert!(patterns.iter().any(|p| p.contains("target")));
+        assert!(patterns.iter().any(|p| p.contains("*.log")));
+    }
+
+    #[test]
+    fn ignores_comments_and_empty_lines() {
+        let dir = tempdir().unwrap();
+        write_gitignore(dir.path(), "# comment\n\n*.tmp\n");
+
+        let filter = GitIgnoreFilter::from_gitignore(dir.path(), &[]);
+        let patterns: Vec<String> = filter
+            .patterns()
+            .iter()
+            .map(|p| p.matcher().glob().to_string())
+            .collect();
+        assert!(patterns.iter().any(|p| p.contains("*.tmp")));
+        assert!(!patterns.iter().any(|p| p.contains("#")));
+    }
+
+    #[test]
+    fn cli_patterns_are_appended() {
+        let dir = tempdir().unwrap();
+        write_gitignore(dir.path(), "target/\n");
+
+        let filter = GitIgnoreFilter::from_gitignore(dir.path(), &["build/".into()]);
+        let patterns: Vec<String> = filter
+            .patterns()
+            .iter()
+            .map(|p| p.matcher().glob().to_string())
+            .collect();
+        assert!(patterns.iter().any(|p| p.contains("target")));
+        assert!(patterns.iter().any(|p| p.contains("build")));
+    }
+
+    #[test]
+    fn missing_gitignore_uses_cli_patterns() {
+        let dir = tempdir().unwrap();
+        let filter = GitIgnoreFilter::from_gitignore(dir.path(), &["build/".into()]);
+        let patterns: Vec<String> = filter
+            .patterns()
+            .iter()
+            .map(|p| p.matcher().glob().to_string())
+            .collect();
+        assert!(patterns.iter().any(|p| p.contains("build")));
+    }
+}

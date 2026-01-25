@@ -16,7 +16,7 @@ fn main() {
             follow_symlinks,
             ignore,
         } => {
-            let ignore_filter = GitIgnoreFilter::new(&path, &ignore.unwrap_or(Vec::new()));
+            let ignore_filter = GitIgnoreFilter::from_gitignore(&path, &ignore.unwrap_or(Vec::new()));
 
             let report = collect(&path, max_depth, follow_symlinks, &ignore_filter);
             {
