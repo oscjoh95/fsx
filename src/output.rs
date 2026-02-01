@@ -1,4 +1,5 @@
 use fsx::collect_stats::FsStats;
+use fsx::find::FindEntry;
 
 #[derive(clap::ValueEnum, Clone, Debug)]
 pub enum OutputFormat {
@@ -46,6 +47,24 @@ pub fn print_stats(stats: &FsStats, format: OutputFormat) {
                 );
             }
             println!("Max depth: {}", stats.max_depth);
+        }
+    }
+}
+
+pub fn print_find_entries(entries: &[FindEntry], format: OutputFormat) {
+    match format {
+        OutputFormat::Raw => {
+            for entry in entries {
+                println!("{}", entry.name.display())
+            }
+        }
+        OutputFormat::Debug => {
+            println!("{:?}", entries);
+        }
+        OutputFormat::Human => {
+            for entry in entries {
+                println!("{}", entry.name.display())
+            }
         }
     }
 }

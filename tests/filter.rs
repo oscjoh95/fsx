@@ -269,4 +269,15 @@ mod gitignore_tests {
             .collect();
         assert!(patterns.iter().any(|p| p.contains("build")));
     }
+
+    #[test]
+    fn wildcard_ignore_with_unanchored_negation_reincludes_at_any_depth() {
+        let filter = GitIgnoreFilter::new(&root(), &["*.txt".into(), "!a.txt".into()]);
+
+        assert!(!filter.is_ignored(&p("a.txt"), false));
+        assert!(!filter.is_ignored(&p("sub/a.txt"), false));
+
+        assert!(filter.is_ignored(&p("b.txt"), false));
+        assert!(filter.is_ignored(&p("sub/b.txt"), false));
+    }
 }

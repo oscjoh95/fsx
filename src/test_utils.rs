@@ -1,4 +1,5 @@
 use std::path::Path;
+use crate::filter::GitIgnoreFilter;
 
 pub enum FsNode<'a> {
     File(&'a str, &'a str),
@@ -35,4 +36,9 @@ pub fn create_fs_tree(root: &Path, node: &FsNode) -> std::io::Result<()> {
         }
     }
     Ok(())
+}
+
+pub fn gitignore_filter(root: &Path, patterns: &[&str]) -> GitIgnoreFilter {
+    let patterns: Vec<String> = patterns.iter().map(|s| s.to_string()).collect();
+    GitIgnoreFilter::new(root, &patterns)
 }

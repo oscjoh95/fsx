@@ -1,141 +1,65 @@
 # fsx - File System Explorer
 
-`fsx` is a small Rust CLI tool for exploring directory trees and reporting filesystem statistics.
+`fsx` is a small Rust CLI tool to explore directories, compute statistics, and search for files.
 
-It recursively walks a directory tree and computes:
+It can:
 
-- Total files
-- Total directories
-- Total size
-- Largest file
-- Maximum depth reached during traversal
-
-It continues on errors, reporting unreadable files or directories as warnings.
+- Compute filesystem stats (files, directories, size, largest file, max depth)
+- Search for files matching regex patterns
+- Respect `.gitignore` rules in the root of the analyzed directory
+- Optionally follow symlinks and limit recursion depth
 
 ---
 
 ## Installation
 
-Build from source with Rust:
-
+Build from source:
 ```bash
-git clone https://github.com/oscjoh95/fsx.git
-cd fsx
-cargo build --release
-``` 
-The binary will be available at target/release/fsx.
+git clone https://github.com/oscjoh95/fsx.git  
+cd fsx  
+cargo build --release  
+```
+The binary will be available at `target/release/fsx`.
 
-## Usage
-### Basic
+---
+
+## Commands
+
+### fsx stats
+
+Compute filesystem statistics for a directory tree.
+
+Basic usage:
 ```bash
-fsx stats
+fsx stats  
 ```
-Analyzes the current directory.
-
-### Specify a path
+Analyze a specific directory:
 ```bash
-fsx stats /path/to/dir
+fsx stats /path/to/dir  
 ```
+For full options, ignore handling, and output formats, see [Stats Docs](docs/stats.md).
 
-### Limit recursion depth
+---
+
+### fsx find
+
+Search for files matching a regex pattern.
+
+Basic usage (search current directory for all files):
 ```bash
-fsx stats --max-depth 2
+fsx find --regex ".*"  
 ```
-Depth starts at 1 for entries directly under the root path.
-
-If not set, the entire directory tree is traversed.
-
-### Follow symbolic links
-
-By default, symbolic links are detected but not followed.
-
-To recurse into symlink targets:
+Search a specific directory:
 ```bash
-fsx stats --follow-symlinks
+fsx find /path/to/dir --regex ".*\.rs$"  
 ```
-Symlink cycles are detected and avoided automatically.
+For full options, depth control, and advanced search, see [Find Docs](docs/find.md).
 
-### Ignore paths
+---
 
-`fsx` automatically reads a `.gitignore` file in the root of the directory being analyzed. Patterns from this file are applied during traversal.  
+## Notes
 
-You can also provide additional ignore patterns via the CLI `--ignore` flag. CLI patterns are appended to `.gitignore` patterns, so they take precedence if there’s overlap.  
-
-```bash
-fsx stats --ignore "target/"
-```
-
-Ignored directories are skipped entirely, including all children.  
-
-Currently, only a `.gitignore` in the root directory is supported; nested `.gitignore` files are ignored.
-
-### Ignore semantics and directory traversal
-
-Ignore patterns are evaluated in order, following gitignore-style rules.
-However, fsx applies ignores **during directory traversal**.
-
-If a directory is ignored, fsx will not descend into it.
-This means that negation patterns (`!`) cannot re-include files or
-subdirectories inside an ignored directory, because they are never visited.
-
-For example:
-```bash
-fsx stats --ignore "target/" --ignore "!target/keep/"
-```
-
-In this case, `target/` is ignored and traversal stops at that directory.
-`target/keep/` will not be visited, even though it is later negated.
-
-To include a subdirectory, the parent directory must not be ignored.
-
-To selectively ignore contents of a directory while keeping a subdirectory,
-ignore the contents instead of the directory itself, for example:
-```bash
-fsx stats --ignore "target/*" --ignore "!target/keep/"
-```
-
-### Output formats
-```bash 
- fsx stats --format human # Default, human-readable sizes
- fsx stats --format raw # Exact byte counts
- fsx stats --format debug # Rust struct dump
- ```
-
-## Options & Notes
-### Arguments
-```bash
-[PATH] Root directory to analyze (default: .)
-```
-### Options
-```bash
--m, --max-depth <MAX_DEPTH> Limit recursion to a maximum depth.
-                            Depth starts at 1 for entries directly under PATH.
-                            If not set, the entire directory tree is traversed.
-
---format <FORMAT> Output format:
-    human - Human-readable sizes (default)
-    raw - Exact byte counts
-    debug - Debug output (Rust struct dump)
-
---follow-symlinks
-    Recurse into symbolic links.
-    Symlink cycles are detected and avoided.
-
---ignore <PATTERN>
-    Ignore paths matching the given gitignore pattern.
-```
-
-### Examples
-```bash 
-# Analyze current directory with default human-readable output
-fsx stats
-
-# Analyze specific directory with raw output
-fsx stats /path/to/dir --format raw
-
-# Limit depth to 2
-fsx stats /path/to/dir --max-depth 2
-
-# Follow symlinks but ignore build artifacts
-fsx stats --follow-symlinks --ignore "target/" --ignore "*.log"
-```
+- CLI ignore patterns are appended to `.gitignore` patterns and take precedence.  
+- Currently, only `.gitignore` files in the root directory are supported.  
+- Output formats: `human` (default), `raw` (exact bytes), `debug` (Rust struct dump).  
+- For detailed usage examples and advanced options, see the docs in the `docs/` folder.
