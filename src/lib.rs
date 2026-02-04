@@ -1,5 +1,6 @@
 pub mod error; // FsError etc
 pub mod filter;
+pub mod matcher;
 pub mod test_utils; // helpers for tests
 pub mod walk; // filesystem walking
 

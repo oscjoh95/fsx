@@ -1,5 +1,5 @@
-use std::path::Path;
 use crate::filter::GitIgnoreFilter;
+use std::path::Path;
 
 pub enum FsNode<'a> {
     File(&'a str, &'a str),
@@ -7,7 +7,7 @@ pub enum FsNode<'a> {
     #[cfg(target_os = "windows")]
     SymlinkFile(&'a str, &'a str), // (link name, target relative path)
     #[cfg(target_os = "windows")]
-    SymlinkDir(&'a str, &'a str),  // (link name, target relative path)
+    SymlinkDir(&'a str, &'a str), // (link name, target relative path)
 }
 
 pub fn create_fs_tree(root: &Path, node: &FsNode) -> std::io::Result<()> {
@@ -41,4 +41,15 @@ pub fn create_fs_tree(root: &Path, node: &FsNode) -> std::io::Result<()> {
 pub fn gitignore_filter(root: &Path, patterns: &[&str]) -> GitIgnoreFilter {
     let patterns: Vec<String> = patterns.iter().map(|s| s.to_string()).collect();
     GitIgnoreFilter::new(root, &patterns)
+}
+
+// Compares two floats with default tolerance
+const EPS: f32 = 1e-6;
+pub fn approx_eq(a: f32, b: f32) -> bool {
+    (a - b).abs() < EPS
+}
+
+// Compares two floats with tolerance
+pub fn approx_eq_eps(a: f32, b: f32, eps: f32) -> bool {
+    (a - b).abs() < eps
 }
